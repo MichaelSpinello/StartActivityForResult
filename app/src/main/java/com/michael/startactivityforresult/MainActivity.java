@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.FragmentManager;
 import androidx.savedstate.SavedStateRegistry;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap mFoto;
     private Bitmap mFotoToUpload = null;
     private ProgressBar mSpinner;
+    private MyFragment mStateFragment;
+    private static final String KEY_STATE_FRAGMENT = "custom_activity_state";
     private static final int REQUEST_IMAGE_CAPTURE = 1;
     private Intent takePictureIntent;
     private String mPhotoDirectory;
@@ -83,6 +86,13 @@ public class MainActivity extends AppCompatActivity {
         mSpinner.setVisibility(View.GONE);
         final ConstraintLayout mLayout = findViewById(R.id.root_layout);
         ViewTreeObserver vto = mLayout.getViewTreeObserver();
+        FragmentManager fm = getSupportFragmentManager();
+        mStateFragment = (MyFragment) fm.findFragmentByTag(KEY_STATE_FRAGMENT);
+        if(mStateFragment == null){
+            mStateFragment = new MyFragment();
+            fm.beginTransaction().add(mStateFragment, KEY_STATE_FRAGMENT).commit();
+        }
+
 
         if(savedInstanceState != null) {
             Bundle restoredState = getSavedStateRegistry().consumeRestoredStateForKey(MY_SAVED_STATE_KEY);
@@ -128,8 +138,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                UploadTask uploadTask = new UploadTask();
-                uploadTask.setOnUploadTaskListener(MainActivity.this, new UploadTask.OnUploadTaskListener() {
+                MyFragment.UploadTask uploadTask = new MyFragment.UploadTask();
+                uploadTask.setOnUploadTaskListener(MainActivity.this, new MyFragment.UploadTask.OnUploadTaskListener() {
                     @Override
                     public void onSuccessReceiver(int upload, Boolean inProgress) {
                         if(inProgress) {
