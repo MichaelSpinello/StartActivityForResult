@@ -265,27 +265,8 @@ public class MainActivity extends AppCompatActivity {
             matrix.postRotate(angle);
             mFoto = Bitmap.createBitmap(mFoto, 0, 0, mFoto.getWidth(),
                     mFoto.getHeight(), matrix, true);
-
-            //double  aspectRatio = (double)mFoto.getWidth() / (double)mFoto.getHeight();
-            //int width = mFoto.getWidth(), height = mFoto.getHeight();
-            /*if(height > mImageView.getHeight()) {
-                height = mImageView.getHeight();
-                width = (int) (height * aspectRatio);
-            }
-            if(width >= mImageView.getWidth()){
-                width = mImageView.getWidth();
-                height = (int)(width / aspectRatio);
-            }
-            if(height >= mImageView.getHeight()) {
-                height = mImageView.getHeight();
-                width = (int) (height * aspectRatio);
-            }
-*/
-
-           // mFoto = Bitmap.createScaledBitmap(mFoto, width, height, true);
             mImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
             mImageView.setImageBitmap(mFoto);
-            //mImageView.setScaleType(ImageView.ScaleType.CENTER);
             mFotoToUpload = mFoto;
 
         }
