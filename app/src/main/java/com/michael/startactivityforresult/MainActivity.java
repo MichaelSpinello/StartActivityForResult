@@ -7,8 +7,11 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentManager;
 import androidx.savedstate.SavedStateRegistry;
+
+import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -17,6 +20,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
@@ -44,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap mFotoToUpload = null;
     private ProgressBar mSpinner;
     private MyFragment mStateFragment;
+    private ConstraintLayout layout;
+    private FragmentManager fm;
     private static final String KEY_STATE_FRAGMENT = "custom_activity_state";
     private static final int REQUEST_IMAGE_CAPTURE = 1;
     private Intent takePictureIntent;
@@ -53,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String STATUS = "sts";
 
     private final String MY_SAVED_STATE_KEY = "my_saved_state";
+    final RotateAnimation rotate = new RotateAnimation(0, 180,
+            Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+
 
     SavedStateRegistry.SavedStateProvider savedStateProvider =
             new SavedStateRegistry.SavedStateProvider() {
@@ -76,7 +85,8 @@ public class MainActivity extends AppCompatActivity {
         getSavedStateRegistry().registerSavedStateProvider(MY_SAVED_STATE_KEY, savedStateProvider);
 
         setContentView(R.layout.activity_main);
-
+        rotate.setInterpolator(new LinearInterpolator());
+        rotate.setDuration(10000);
         mButton = findViewById(R.id.button);
         mUpload = findViewById(R.id.upload);
         mDescription = findViewById(R.id.description);
@@ -85,14 +95,18 @@ public class MainActivity extends AppCompatActivity {
         mSpinner = findViewById(R.id.progressBar);
         mSpinner.setVisibility(View.GONE);
         final ConstraintLayout mLayout = findViewById(R.id.root_layout);
+        layout = mLayout;
         ViewTreeObserver vto = mLayout.getViewTreeObserver();
-        FragmentManager fm = getSupportFragmentManager();
+        fm = getSupportFragmentManager();
         mStateFragment = (MyFragment) fm.findFragmentByTag(KEY_STATE_FRAGMENT);
         if(mStateFragment == null){
             mStateFragment = new MyFragment();
+
             fm.beginTransaction().add(mStateFragment, KEY_STATE_FRAGMENT).commit();
         }
-
+        else{
+            System.out.println("ciao");
+        }
 
         if(savedInstanceState != null) {
             Bundle restoredState = getSavedStateRegistry().consumeRestoredStateForKey(MY_SAVED_STATE_KEY);
@@ -100,16 +114,18 @@ public class MainActivity extends AppCompatActivity {
                 mPhotoDirectory = restoredState.getString(IMAGE_KEY);
                 mDescription.setText(restoredState.getString(DESCRIPTION));
                 mStatus.setText(restoredState.getString(STATUS));
+                if(mStateFragment.getUploadTask() != null) {
+                    mStateFragment.getUploadTask().setOnUploadTaskListener(
+                            new MyFragment.UploadTask.OnUploadTaskListener() {
+                                @Override
+                                public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
+                                    ckeckStatus(resultUpload, inProgress);
+                                }
+                            });
+                    ckeckStatus(mStateFragment.getUploadTask().getResultUpload(), mStateFragment.getUploadTask().isInProgress());
+                }
             }
         }
-
-        mButton.setOnClickListener(new Button.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dispatchTakePictureIntent();
-            }
-        });
-
 
         if(mPhotoDirectory != null) {
             vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -127,44 +143,53 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-    }
+        mButton.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(mStateFragment.getUploadTask() == null || !mStateFragment.getUploadTask().isInProgress())
+                    dispatchTakePictureIntent();
+            }
+        });
 
-    private void startUploadButton(){
-        final RotateAnimation rotate = new RotateAnimation(0, 180,
-                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        rotate.setInterpolator(new LinearInterpolator());
-        rotate.setDuration(10000);
+
         mUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if(mFotoToUpload != null && (mStateFragment.getUploadTask() == null || !mStateFragment.getUploadTask().isInProgress())) {
+                    mStateFragment.setUploadTask(new MyFragment.UploadTask());
+                    mStateFragment.getUploadTask().setOnUploadTaskListener(
+                            new MyFragment.UploadTask.OnUploadTaskListener() {
+                                @Override
+                                public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
+                                    ckeckStatus(resultUpload, inProgress);
+                                }
+                            });
+                    mStateFragment.getUploadTask().execute((Bitmap) mFotoToUpload);
 
-                MyFragment.UploadTask uploadTask = new MyFragment.UploadTask();
-                uploadTask.setOnUploadTaskListener(MainActivity.this, new MyFragment.UploadTask.OnUploadTaskListener() {
-                    @Override
-                    public void onSuccessReceiver(int upload, Boolean inProgress) {
-                        if(inProgress) {
-                            mSpinner.setVisibility(View.VISIBLE);
-                            mSpinner.startAnimation(rotate);
-                        }
-                        else{
-                            mSpinner.setVisibility(View.INVISIBLE);
-                        }
-                        switch(upload){
-                            case -1:
-                                mStatus.setText("NON caricata");
-                                break;
-                            case 0:
-                                mStatus.setText("uploading:");
-                                break;
-                            case 1:
-                                mStatus.setText("caricata");
-                                break;
-                        }
-                    }
-                });
-                uploadTask.execute((Bitmap)mFotoToUpload);
+                }
             }
         });
+
+    }
+
+    public void ckeckStatus (int resultUpload, Boolean inProgress) {
+        if (inProgress) {
+            mSpinner.setVisibility(View.VISIBLE);
+            mSpinner.startAnimation(rotate);
+        } else {
+            mSpinner.setVisibility(View.INVISIBLE);
+        }
+        switch (resultUpload) {
+            case -1:
+                mStatus.setText("NON caricata");
+                break;
+            case 0:
+                mStatus.setText("uploading:");
+                break;
+            case 1:
+                mStatus.setText("caricata");
+                break;
+        }
     }
 
     private void dispatchTakePictureIntent(){
@@ -216,9 +241,9 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            int photoOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
             float angle;
-            switch (orientation) {
+            switch (photoOrientation) {
                 case ExifInterface.ORIENTATION_ROTATE_270:
                     angle = 270f;
                     break;
@@ -240,13 +265,37 @@ public class MainActivity extends AppCompatActivity {
             matrix.postRotate(angle);
             mFoto = Bitmap.createBitmap(mFoto, 0, 0, mFoto.getWidth(),
                     mFoto.getHeight(), matrix, true);
-            mFoto = Bitmap.createScaledBitmap(mFoto, mImageView.getWidth(),
-                    mImageView.getHeight(), true);
+
+            //double  aspectRatio = (double)mFoto.getWidth() / (double)mFoto.getHeight();
+            //int width = mFoto.getWidth(), height = mFoto.getHeight();
+            /*if(height > mImageView.getHeight()) {
+                height = mImageView.getHeight();
+                width = (int) (height * aspectRatio);
+            }
+            if(width >= mImageView.getWidth()){
+                width = mImageView.getWidth();
+                height = (int)(width / aspectRatio);
+            }
+            if(height >= mImageView.getHeight()) {
+                height = mImageView.getHeight();
+                width = (int) (height * aspectRatio);
+            }
+*/
+
+           // mFoto = Bitmap.createScaledBitmap(mFoto, width, height, true);
+            mImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
             mImageView.setImageBitmap(mFoto);
+            //mImageView.setScaleType(ImageView.ScaleType.CENTER);
             mFotoToUpload = mFoto;
-            startUploadButton();
 
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mStateFragment.getUploadTask() != null) {
+            mStateFragment.getUploadTask().setOnUploadTaskListener(null);
+        }
+    }
 }

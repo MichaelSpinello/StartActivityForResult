@@ -41,9 +41,10 @@
         android:id="@+id/imageview"
         android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:background="#d2d2d2"
         app:layout_constraintEnd_toStartOf="@+id/description"
         app:layout_constraintStart_toStartOf="parent"
-        android:background="#fff000"
+
         />
 
     <ProgressBar
