@@ -6,6 +6,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.savedstate.SavedStateRegistry;
 
 import android.app.Activity;
@@ -20,6 +22,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -47,44 +50,22 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap mFoto;
     private Bitmap mFotoToUpload = null;
     private ProgressBar mSpinner;
-    private MyFragment mStateFragment;
-    private ConstraintLayout layout;
-    private FragmentManager fm;
-    private static final String KEY_STATE_FRAGMENT = "custom_activity_state";
-    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private RotateAnimation rotate;
     private Intent takePictureIntent;
+    private static final int REQUEST_IMAGE_CAPTURE = 2;
+    private MyViewModel model;
     private String mPhotoDirectory;
-    private static final String IMAGE_KEY = "img";
-    private static final String DESCRIPTION = "dsc";
-    private static final String STATUS = "sts";
+    private boolean inProgress;
+    private int resultUpload;
 
-    private final String MY_SAVED_STATE_KEY = "my_saved_state";
-    final RotateAnimation rotate = new RotateAnimation(0, 180,
-            Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-
-
-    SavedStateRegistry.SavedStateProvider savedStateProvider =
-            new SavedStateRegistry.SavedStateProvider() {
-        @NonNull
-        @Override
-        public Bundle saveState() {
-            Bundle bundle = new Bundle();
-            if(mPhotoDirectory!= null && mDescription != null) {
-                bundle.putString(IMAGE_KEY, mPhotoDirectory);
-                bundle.putString(DESCRIPTION, (String) mDescription.getText());
-                bundle.putString(STATUS, (String)mStatus.getText());
-            }
-            return bundle;
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        getSavedStateRegistry().registerSavedStateProvider(MY_SAVED_STATE_KEY, savedStateProvider);
 
         setContentView(R.layout.activity_main);
+        model = new ViewModelProvider(this).get(MyViewModel.class);
         rotate.setInterpolator(new LinearInterpolator());
         rotate.setDuration(10000);
         mButton = findViewById(R.id.button);
@@ -94,37 +75,32 @@ public class MainActivity extends AppCompatActivity {
         mImageView = findViewById(R.id.imageview);
         mSpinner = findViewById(R.id.progressBar);
         mSpinner.setVisibility(View.GONE);
+        rotate = new RotateAnimation(0, 180,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         final ConstraintLayout mLayout = findViewById(R.id.root_layout);
-        layout = mLayout;
         ViewTreeObserver vto = mLayout.getViewTreeObserver();
-        fm = getSupportFragmentManager();
-        mStateFragment = (MyFragment) fm.findFragmentByTag(KEY_STATE_FRAGMENT);
-        if(mStateFragment == null){
-            mStateFragment = new MyFragment();
 
-            fm.beginTransaction().add(mStateFragment, KEY_STATE_FRAGMENT).commit();
-        }
-        else{
-            System.out.println("ciao");
-        }
+        if (model.getmPhotoDirectory() != null)
+            mPhotoDirectory = model.getmPhotoDirectory();
+        if(model.getmDescription() != null)
+            mDescription.setText(model.getmDescription());
+        if(model.getmStatus() != null)
+            mStatus.setText(model.getmStatus());
 
-        if(savedInstanceState != null) {
-            Bundle restoredState = getSavedStateRegistry().consumeRestoredStateForKey(MY_SAVED_STATE_KEY);
-            if(restoredState != null){
-                mPhotoDirectory = restoredState.getString(IMAGE_KEY);
-                mDescription.setText(restoredState.getString(DESCRIPTION));
-                mStatus.setText(restoredState.getString(STATUS));
-                if(mStateFragment.getUploadTask() != null) {
-                    mStateFragment.getUploadTask().setOnUploadTaskListener(
-                            new MyFragment.UploadTask.OnUploadTaskListener() {
-                                @Override
-                                public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
-                                    ckeckStatus(resultUpload, inProgress);
-                                }
-                            });
-                    ckeckStatus(mStateFragment.getUploadTask().getResultUpload(), mStateFragment.getUploadTask().isInProgress());
+        model.getTaskResponse().observe(this, taskResponse -> {
+            inProgress = taskResponse.isInProgress();
+            resultUpload = taskResponse.getResultUpload();
+        });
+
+        if(model.getUploadTask() != null){
+            model.getUploadTask().setOnUploadTaskListener(new MyViewModel.UploadTask.OnUploadTaskListener() {
+                @Override
+                public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
+                    checkStatus(inProgress, resultUpload);
+                    model.setmStatus((String)mStatus.getText());
                 }
-            }
+            });
+            checkStatus(model.getUploadTask().isInProgress(), model.getUploadTask().getResultUpload());
         }
 
         if(mPhotoDirectory != null) {
@@ -146,8 +122,9 @@ public class MainActivity extends AppCompatActivity {
         mButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mStateFragment.getUploadTask() == null || !mStateFragment.getUploadTask().isInProgress())
+                if(model.getUploadTask() == null || !model.getUploadTask().isInProgress()) {
                     dispatchTakePictureIntent();
+                }
             }
         });
 
@@ -155,41 +132,21 @@ public class MainActivity extends AppCompatActivity {
         mUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(mFotoToUpload != null && (mStateFragment.getUploadTask() == null || !mStateFragment.getUploadTask().isInProgress())) {
-                    mStateFragment.setUploadTask(new MyFragment.UploadTask());
-                    mStateFragment.getUploadTask().setOnUploadTaskListener(
-                            new MyFragment.UploadTask.OnUploadTaskListener() {
-                                @Override
-                                public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
-                                    ckeckStatus(resultUpload, inProgress);
-                                }
-                            });
-                    mStateFragment.getUploadTask().execute((Bitmap) mFotoToUpload);
 
+                if (mFotoToUpload != null && (model.getUploadTask() == null || !model.getUploadTask().isInProgress())) {
+                    model.setUploadTask(new MyViewModel.UploadTask());
+                    model.getUploadTask().setOnUploadTaskListener(new MyViewModel.UploadTask.OnUploadTaskListener() {
+                        @Override
+                        public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
+                            checkStatus(inProgress, resultUpload);
+                            model.setmStatus((String)mStatus.getText());
+                        }
+
+                    });
+                    model.getUploadTask().execute(mFotoToUpload);
                 }
             }
         });
-
-    }
-
-    public void ckeckStatus (int resultUpload, Boolean inProgress) {
-        if (inProgress) {
-            mSpinner.setVisibility(View.VISIBLE);
-            mSpinner.startAnimation(rotate);
-        } else {
-            mSpinner.setVisibility(View.INVISIBLE);
-        }
-        switch (resultUpload) {
-            case -1:
-                mStatus.setText("NON caricata");
-                break;
-            case 0:
-                mStatus.setText("uploading:");
-                break;
-            case 1:
-                mStatus.setText("caricata");
-                break;
-        }
     }
 
     private void dispatchTakePictureIntent(){
@@ -206,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
                         "com.michael.startactivityforresult", photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+
             }
         }
     }
@@ -216,11 +174,13 @@ public class MainActivity extends AppCompatActivity {
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             mDescription.setText("Immagine acquisita correttamente");
             setPic(mPhotoDirectory);
+
         }
         else {
             mDescription.setText("Immagine non acquisita. Riprovare");
             setPic(null);
         }
+        model.setmDescription((String)mDescription.getText());
     }
 
     private File createImageFile() throws IOException{
@@ -229,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         File storageDir = getExternalFilesDir(DIRECTORY_PICTURES);
         File image = File.createTempFile(imageNameFile, ".jpg", storageDir);
         mPhotoDirectory = image.getAbsolutePath();
+        model.setmPhotoDirectory(mPhotoDirectory);
         return image;
     }
 
@@ -272,11 +233,30 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void checkStatus (boolean inProgress, int resultUpload) {
+        if (inProgress){
+            mSpinner.setVisibility(View.VISIBLE);
+            mSpinner.startAnimation(rotate);
+        } else {
+            mSpinner.setVisibility(View.INVISIBLE);
+
+        }
+        switch (resultUpload) {
+            case -1:
+                mStatus.setText("NON caricata:");
+                break;
+            case 0:
+                mStatus.setText("uploading:");
+                break;
+            case 1:
+                mStatus.setText("caricata");
+                break;
+        }
+
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(mStateFragment.getUploadTask() != null) {
-            mStateFragment.getUploadTask().setOnUploadTaskListener(null);
-        }
     }
 }

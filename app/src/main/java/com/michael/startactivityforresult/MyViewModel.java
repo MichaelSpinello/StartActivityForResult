@@ -1,20 +1,28 @@
 package com.michael.startactivityforresult;
 
+
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Random;
 
-public class MyFragment extends Fragment {
-
-    private static final String TAG = "custom_activity_state";
+public class MyViewModel extends ViewModel {
+   // private MutableLiveData<Modello> modello;
+    private String mDescription;
+    private String mStatus;
+    private String mPhotoDirectory;
+    private MutableLiveData<TaskResponse> taskResponse;
     private UploadTask uploadTask;
-    private UploadTask.OnUploadTaskListener mListener;
 
     public UploadTask getUploadTask() {
         return uploadTask;
@@ -24,25 +32,51 @@ public class MyFragment extends Fragment {
         this.uploadTask = uploadTask;
     }
 
-    public UploadTask.OnUploadTaskListener getmListener() {
-        return mListener;
+    public String getmDescription() {
+        return mDescription;
     }
 
-    public void setmListener(UploadTask.OnUploadTaskListener mListener) {
-        this.mListener = mListener;
+    public void setmDescription(String mDescription) {
+        this.mDescription = mDescription;
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setRetainInstance(true);
+    public String getmStatus() {
+        return mStatus;
     }
+
+    public void setmStatus(String mStatus) {
+        this.mStatus = mStatus;
+    }
+
+    public String getmPhotoDirectory() {
+        return mPhotoDirectory;
+    }
+
+    public void setmPhotoDirectory(String mPhotoDirectory) {
+        this.mPhotoDirectory = mPhotoDirectory;
+    }
+
+
+
+    public MutableLiveData<TaskResponse> getTaskResponse() {
+        if(taskResponse == null)
+            taskResponse = new MutableLiveData<TaskResponse>();
+        updateModello();
+        return taskResponse;
+    }
+
+    private void updateModello() {
+
+
+    }
+
+
 
     public static class UploadTask extends AsyncTask<Bitmap, Void, Boolean> {
 
-        protected boolean inProgress;
-        private OnUploadTaskListener listener;
+        private boolean inProgress;
         private int resultUpload;
+        private MyViewModel.UploadTask.OnUploadTaskListener listener;
 
         public boolean isInProgress(){
             return inProgress;
@@ -57,6 +91,9 @@ public class MyFragment extends Fragment {
             super.onPreExecute();
             inProgress = true;
             resultUpload = 0;
+
+            if(listener != null)
+                listener.onSuccessReceiver(resultUpload, inProgress);
         }
 
         @Override
@@ -84,18 +121,16 @@ public class MyFragment extends Fragment {
             else
                 resultUpload = -1;
             inProgress = false;
+
             if(listener != null)
                 listener.onSuccessReceiver(resultUpload, inProgress);
-
         }
-
-        public void setOnUploadTaskListener( MyFragment.UploadTask.OnUploadTaskListener listener){
+        public void setOnUploadTaskListener( MyViewModel.UploadTask.OnUploadTaskListener listener){
             this.listener = listener;
         }
 
         public interface OnUploadTaskListener{
-            void onSuccessReceiver(int upload, Boolean inProgress);
+            void onSuccessReceiver(int resultUpload, Boolean inProgress);
         }
     }
-
 }
