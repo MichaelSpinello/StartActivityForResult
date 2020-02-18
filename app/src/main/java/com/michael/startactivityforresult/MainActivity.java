@@ -50,7 +50,8 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap mFoto;
     private Bitmap mFotoToUpload = null;
     private ProgressBar mSpinner;
-    private RotateAnimation rotate;
+    private final RotateAnimation rotate = new RotateAnimation(0, 180,
+            Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
     private Intent takePictureIntent;
     private static final int REQUEST_IMAGE_CAPTURE = 2;
     private MyViewModel model;
@@ -75,8 +76,7 @@ public class MainActivity extends AppCompatActivity {
         mImageView = findViewById(R.id.imageview);
         mSpinner = findViewById(R.id.progressBar);
         mSpinner.setVisibility(View.GONE);
-        rotate = new RotateAnimation(0, 180,
-                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+
         final ConstraintLayout mLayout = findViewById(R.id.root_layout);
         ViewTreeObserver vto = mLayout.getViewTreeObserver();
 
@@ -90,18 +90,8 @@ public class MainActivity extends AppCompatActivity {
         model.getTaskResponse().observe(this, taskResponse -> {
             inProgress = taskResponse.isInProgress();
             resultUpload = taskResponse.getResultUpload();
+            checkStatus(inProgress, resultUpload);
         });
-
-        if(model.getUploadTask() != null){
-            model.getUploadTask().setOnUploadTaskListener(new MyViewModel.UploadTask.OnUploadTaskListener() {
-                @Override
-                public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
-                    checkStatus(inProgress, resultUpload);
-                    model.setmStatus((String)mStatus.getText());
-                }
-            });
-            checkStatus(model.getUploadTask().isInProgress(), model.getUploadTask().getResultUpload());
-        }
 
         if(mPhotoDirectory != null) {
             vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -122,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
         mButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(model.getUploadTask() == null || !model.getUploadTask().isInProgress()) {
+                if(!inProgress) {
                     dispatchTakePictureIntent();
                 }
             }
@@ -132,18 +122,8 @@ public class MainActivity extends AppCompatActivity {
         mUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                if (mFotoToUpload != null && (model.getUploadTask() == null || !model.getUploadTask().isInProgress())) {
-                    model.setUploadTask(new MyViewModel.UploadTask());
-                    model.getUploadTask().setOnUploadTaskListener(new MyViewModel.UploadTask.OnUploadTaskListener() {
-                        @Override
-                        public void onSuccessReceiver(int resultUpload, Boolean inProgress) {
-                            checkStatus(inProgress, resultUpload);
-                            model.setmStatus((String)mStatus.getText());
-                        }
-
-                    });
-                    model.getUploadTask().execute(mFotoToUpload);
+                if (mFotoToUpload != null && !inProgress) {
+                    model.startTask(mFotoToUpload);
                 }
             }
         });
@@ -173,13 +153,12 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             mDescription.setText("Immagine acquisita correttamente");
-            setPic(mPhotoDirectory);
-
         }
         else {
             mDescription.setText("Immagine non acquisita. Riprovare");
-            setPic(null);
+            mPhotoDirectory = null;
         }
+        setPic(mPhotoDirectory);
         model.setmDescription((String)mDescription.getText());
     }
 

@@ -3,6 +3,19 @@ package com.michael.startactivityforresult;
 import android.widget.TextView;
 
 public class TaskResponse {
+    private int resultUpload;
+    private boolean inProgress;
+
+    public TaskResponse() {
+        this.inProgress = false;
+        this.resultUpload = 0;
+    }
+
+    public TaskResponse(int resultUpload, boolean inProgress) {
+        this.resultUpload = resultUpload;
+        this.inProgress = inProgress;
+    }
+
     public boolean isInProgress() {
         return inProgress;
     }
@@ -10,8 +23,6 @@ public class TaskResponse {
     public void setInProgress(boolean inProgress) {
         this.inProgress = inProgress;
     }
-
-    private boolean inProgress;
 
     public int getResultUpload() {
         return resultUpload;
@@ -21,7 +32,7 @@ public class TaskResponse {
         this.resultUpload = resultUpload;
     }
 
-    private int resultUpload;
+
 
 
 }

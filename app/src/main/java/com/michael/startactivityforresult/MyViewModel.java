@@ -3,12 +3,6 @@ package com.michael.startactivityforresult;
 
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.RotateAnimation;
-import android.widget.ProgressBar;
-import android.widget.TextView;
-
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import java.io.IOException;
@@ -17,7 +11,6 @@ import java.net.URL;
 import java.util.Random;
 
 public class MyViewModel extends ViewModel {
-   // private MutableLiveData<Modello> modello;
     private String mDescription;
     private String mStatus;
     private String mPhotoDirectory;
@@ -61,39 +54,23 @@ public class MyViewModel extends ViewModel {
     public MutableLiveData<TaskResponse> getTaskResponse() {
         if(taskResponse == null)
             taskResponse = new MutableLiveData<TaskResponse>();
-        updateModello();
+
         return taskResponse;
     }
 
-    private void updateModello() {
-
-
+    public void startTask(Bitmap mFotoToUpload) {
+        new UploadTask().execute(mFotoToUpload);
     }
 
 
+    public class UploadTask extends AsyncTask<Bitmap, Void, Boolean> {
 
-    public static class UploadTask extends AsyncTask<Bitmap, Void, Boolean> {
-
-        private boolean inProgress;
-        private int resultUpload;
-        private MyViewModel.UploadTask.OnUploadTaskListener listener;
-
-        public boolean isInProgress(){
-            return inProgress;
-        }
-
-        public int getResultUpload(){
-            return resultUpload;
-        }
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            inProgress = true;
-            resultUpload = 0;
+            taskResponse.setValue(new TaskResponse(0, true));
 
-            if(listener != null)
-                listener.onSuccessReceiver(resultUpload, inProgress);
         }
 
         @Override
@@ -117,20 +94,9 @@ public class MyViewModel extends ViewModel {
         protected void onPostExecute(Boolean success) {
             super.onPostExecute(success);
             if(success)
-                resultUpload = 1;
+                taskResponse.setValue(new TaskResponse(1, false));
             else
-                resultUpload = -1;
-            inProgress = false;
-
-            if(listener != null)
-                listener.onSuccessReceiver(resultUpload, inProgress);
-        }
-        public void setOnUploadTaskListener( MyViewModel.UploadTask.OnUploadTaskListener listener){
-            this.listener = listener;
-        }
-
-        public interface OnUploadTaskListener{
-            void onSuccessReceiver(int resultUpload, Boolean inProgress);
+                taskResponse.setValue(new TaskResponse(-1, false));
         }
     }
 }
