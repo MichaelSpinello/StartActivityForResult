@@ -5,15 +5,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
-import androidx.fragment.app.FragmentManager;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.savedstate.SavedStateRegistry;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -23,7 +18,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
@@ -33,12 +27,25 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.DriveScopes;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
-
 import static android.os.Environment.DIRECTORY_PICTURES;
+import static com.michael.startactivityforresult.DriveServiceHelper.getGoogleDriveService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -58,6 +65,50 @@ public class MainActivity extends AppCompatActivity {
     private String mPhotoDirectory;
     private boolean inProgress;
     private int resultUpload;
+    private DriveServiceHelper mDriveServiceHelper;
+    private static final String TAG = "MainActivity";
+    private static final int REQUEST_CODE_SIGN_IN = 100;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        signIn();
+    }
+
+    private void signIn() {
+
+        Log.d(TAG, "Requesting sign-in");
+
+        GoogleSignInOptions signInOptions =
+                new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestEmail()
+                        .requestScopes(new Scope(DriveScopes.DRIVE_FILE))
+                        .build();
+        GoogleSignInClient client = GoogleSignIn.getClient(this, signInOptions);
+
+        startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGN_IN);
+    }
+
+    private void handleSignInResult(Intent result) {
+        GoogleSignIn.getSignedInAccountFromIntent(result)
+            .addOnSuccessListener(new OnSuccessListener<GoogleSignInAccount>() {
+            @Override
+            public void onSuccess(GoogleSignInAccount googleSignInAccount) {
+                Log.d("LOG", "Signed in as " + googleSignInAccount.getEmail());
+
+                mDriveServiceHelper = new DriveServiceHelper(getGoogleDriveService(getApplicationContext(), googleSignInAccount, "appName"));
+
+                Log.d("LOG", "handleSignInResult: " + mDriveServiceHelper);
+            }
+        })
+        .addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.e("", "Unable to sign in.", e);
+            }
+        });
+    }
 
 
     @Override
@@ -122,8 +173,8 @@ public class MainActivity extends AppCompatActivity {
         mUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mFotoToUpload != null && !inProgress) {
-                    model.startTask(mFotoToUpload);
+                if (mPhotoDirectory != null && !inProgress) {
+                    model.startTask(mPhotoDirectory, mDriveServiceHelper);
                 }
             }
         });
@@ -153,6 +204,11 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             mDescription.setText("Immagine acquisita correttamente");
+        }
+        else if(requestCode == REQUEST_CODE_SIGN_IN){
+            if(resultCode == Activity.RESULT_OK && data != null){
+                handleSignInResult(data);
+            }
         }
         else {
             mDescription.setText("Immagine non acquisita. Riprovare");

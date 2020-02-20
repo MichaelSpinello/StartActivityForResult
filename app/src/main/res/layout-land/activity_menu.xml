@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Mike's App"
+        android:textSize="50dp"
+        android:gravity="center"
+        android:layout_marginTop="40dp"/>
+
+    <TextView
+        android:id="@+id/subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="scegli quale activity vuoi lanciare:"
+        android:textSize="17dp"
+        android:gravity="center"
+        android:layout_marginVertical="60dp"
+        />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/fotocamera"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"
+        android:layout_marginLeft="60dp"
+        android:text="Fotocamera" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/webview"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content"
+        android:text="webview"
+        android:layout_gravity="right"
+        android:layout_marginTop="-50dp"
+        android:layout_marginRight="60dp"
+
+        />
+</LinearLayout>

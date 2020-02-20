@@ -1,14 +1,20 @@
 package com.michael.startactivityforresult;
 
 
-import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.util.Log;
+import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.gson.Gson;
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Random;
+
 
 public class MyViewModel extends ViewModel {
     private String mDescription;
@@ -58,24 +64,43 @@ public class MyViewModel extends ViewModel {
         return taskResponse;
     }
 
-    public void startTask(Bitmap mFotoToUpload) {
-        new UploadTask().execute(mFotoToUpload);
+
+    public void startTask(String mPhotoDirectory, DriveServiceHelper driveServiceHelper) {
+        taskResponse.setValue(new TaskResponse(0, true));
+        File file = new File (mPhotoDirectory);
+        driveServiceHelper.uploadFile(file, "image/jpg", null)
+            .addOnSuccessListener(new OnSuccessListener<GoogleDriveFileHolder>() {
+                @Override
+                public void onSuccess(GoogleDriveFileHolder googleDriveFileHolder) {
+                    Gson gson = new Gson();
+                    Log.d("success: ", "onSuccess: " + gson.toJson(googleDriveFileHolder));
+                    taskResponse.setValue(new TaskResponse(1, false));
+                }
+            })
+            .addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+
+                    Log.d("success: ", "onFailure: " + e.getMessage());
+                    taskResponse.setValue(new TaskResponse(-1, false));
+                    e.printStackTrace(System.out);
+                }
+            });
     }
 
 
-    public class UploadTask extends AsyncTask<Bitmap, Void, Boolean> {
-
+    public class UploadTask extends AsyncTask<String, Void, Boolean> {
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             taskResponse.setValue(new TaskResponse(0, true));
-
         }
 
         @Override
-        protected Boolean doInBackground(Bitmap... bitmaps) {
+        protected Boolean doInBackground(String... strings) {
             try {
+                //uploadToDrive(strings[strings.length-1]);
                 URL url = new URL("https://www.dropbox.com/it/");
                 Thread.sleep(10000);
                 //InputStream inputStream = url.openConnection().getInputStream();
