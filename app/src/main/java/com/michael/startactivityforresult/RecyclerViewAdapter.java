@@ -16,12 +16,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.squareup.picasso.Picasso;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -68,6 +71,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
+
+        String fileId = "0BwwA4oUTeiV1UVNwOHItT0xfa2M";
+
+
 
         try {
             Log.d("Thumbnail: ", driveFeedModel.getId());

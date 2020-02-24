@@ -4,12 +4,13 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
@@ -25,18 +26,14 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
-import com.google.api.services.drive.model.FileList;
-import com.squareup.picasso.Picasso;
 
-import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +48,8 @@ public class ListFragment extends Fragment {
     private static final int REQUEST_IMAGE_CAPTURE = 2;
     private RecyclerView mRecyclerView;
     private ImageView mImageview;
+    private List<File> mFiles;
+    private ArrayList<Bitmap> mBitmap;
 
 
 
@@ -132,65 +131,44 @@ public class ListFragment extends Fragment {
         }
     }
 
+    private void readFile(String fileId) {
+        if (mDriveServiceHelper != null) {
+            Log.d(TAG, "Reading file " + fileId);
+
+            mDriveServiceHelper.readFile(fileId)
+                    .addOnSuccessListener(nameAndContent -> {
+                        String name = nameAndContent.first;
+                        String content = nameAndContent.second;
+
+
+                        setReadWriteMode(fileId);
+                    })
+                    .addOnFailureListener(exception ->
+                            Log.e(TAG, "Couldn't read file.", exception));
+        }
+    }
+
     private void query() {
 
         if (mDriveServiceHelper != null) {
             Log.d(TAG, "Querying for files.");
 
             mDriveServiceHelper.queryFiles()
-                    .addOnSuccessListener(fileList -> {
-                                //StringBuilder builder = new StringBuilder();
-                        /*ArrayList<Bitmap> bitmapList = new ArrayList<Bitmap>();
-                        for (File file : fileList.getFiles()) {
-                            //builder.append(file.getName()).append("\n");
-                            URL url = null;
-                        try {
-                            url = new URL("https://drive.google.com/file/d/" + file.getId() + "/view?usp=sharing");
-                            Log.d("url: ", url.toString());
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        }
+                .addOnSuccessListener(fileList -> {
+                    mBitmap = new ArrayList<Bitmap>();
+                    mFiles = fileList.getFiles();
+                    new DownloadFilesTask().execute();
 
-                        HttpURLConnection connection = null;
-                        Bitmap bmp = null;
-                        try{
-                            connection = (HttpURLConnection) url.openConnection();
-
-                            connection.connect();
-
-                            InputStream inputStream = connection.getInputStream();
-
-                            BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-
-                            bmp = BitmapFactory.decodeStream(bufferedInputStream);
+                    Log.d("TAG", "nel listener");
+                    if(getActivity()!= null) {
+                        mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+                        mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles()));
+                        Log.d("TAG", "sto per uscire dal listener");
+                    }
 
 
-                        }catch(IOException e){
-                            e.printStackTrace();
-                        }finally{
-                            // Disconnect the http url connection
-                            connection.disconnect();
-                        }
-                            bitmapList.add(bmp);
-                        }*/
-                                //String fileNames = builder.toString();
-
-                                //mDocContentEditText.setText(fileNames);
-
-                                //setReadOnlyMode();
-                                //Picasso.with(getActivity()).load("https://drive.google.com/file/d/1UwheS6mwpjA1FbbBv0_bNj-GhI0oGUP-/view")
-                                //        .into(mImageview);
-
-                        Log.d("TAG", "nel listener");
-                        if(getActivity()!= null) {
-                            mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-                            mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles()));
-                            Log.d("TAG", "sto per uscire dal listener");
-                        }
-
-
-                    })
-                    .addOnFailureListener(exception -> Log.e(TAG, "Unable to query files.", exception));
+                })
+                .addOnFailureListener(exception -> Log.e(TAG, "Unable to query files.", exception));
         }
 
     }
@@ -199,5 +177,46 @@ public class ListFragment extends Fragment {
      */
     private void setReadOnlyMode() {
        // mDocContentEditText.setEnabled(false);
+    }
+    private void setReadWriteMode(String fileId) {
+        //mFileTitleEditText.setEnabled(true);
+        //mDocContentEditText.setEnabled(true);
+        //mOpenFileId = fileId;
+    }
+
+    public class DownloadFilesTask  extends AsyncTask <Void, Void, Void>{
+
+        private OutputStream outputStream;
+
+
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            outputStream = new ByteArrayOutputStream();
+
+
+
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            java.io.File outputDir = getActivity().getCacheDir();
+            for(File file : mFiles)
+                try {
+
+                    java.io.File outputFile = java.io.File.createTempFile(file.getName(), file.getFileExtension(), outputDir);
+                    InputStream inputStream = new FileInputStream(outputFile);
+
+
+                    mDriveServiceHelper.getmDriveService().files().get(file.getId())
+                            .executeMediaAndDownloadTo(outputStream);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            return null;
+        }
+
     }
 }

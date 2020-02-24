@@ -54,6 +54,11 @@ public class DriveServiceHelper {
 
 
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
+
+    public Drive getmDriveService() {
+        return mDriveService;
+    }
+
     private final Drive mDriveService;
 
     public DriveServiceHelper(Drive driveService) {
