@@ -29,11 +29,13 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapter.FeedModelViewHolder>{
     private Context mContext;
     private List<File> mDriveFiles;
+    private ArrayList<Bitmap> mBitmap;
 
     public static class FeedModelViewHolder extends RecyclerView.ViewHolder{
         private View driveFileView;
@@ -44,9 +46,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
         }
     }
 
-    public RecyclerViewAdapter(Context context, List<File> driveFileList){
+    public RecyclerViewAdapter(Context context, List<File> driveFileList, ArrayList<Bitmap> mBitmap){
         mContext = context;
         mDriveFiles = driveFileList;
+        this.mBitmap = mBitmap;
     }
 
     @NonNull
@@ -67,7 +70,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
         try {
             url = new URL("https://drive.google.com/uc?export=download&id=" + driveFeedModel.getId());
             Log.d("url: ", url.toString());
-            Picasso.with(mContext).load(url.toString()).into(imageView);
+            //Picasso.with(mContext).load(url.toString()).into(imageView);
+            imageView.setImageBitmap(mBitmap.get(position));
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }

@@ -26,11 +26,16 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.api.client.googleapis.media.MediaHttpDownloader;
+import com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener;
+import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,6 +55,7 @@ public class ListFragment extends Fragment {
     private ImageView mImageview;
     private List<File> mFiles;
     private ArrayList<Bitmap> mBitmap;
+    private java.io.File mFileIO;
 
 
 
@@ -155,14 +161,13 @@ public class ListFragment extends Fragment {
 
             mDriveServiceHelper.queryFiles()
                 .addOnSuccessListener(fileList -> {
-                    mBitmap = new ArrayList<Bitmap>();
                     mFiles = fileList.getFiles();
                     new DownloadFilesTask().execute();
 
                     Log.d("TAG", "nel listener");
                     if(getActivity()!= null) {
                         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-                        mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles()));
+                        mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mBitmap));
                         Log.d("TAG", "sto per uscire dal listener");
                     }
 
@@ -184,38 +189,49 @@ public class ListFragment extends Fragment {
         //mOpenFileId = fileId;
     }
 
-    public class DownloadFilesTask  extends AsyncTask <Void, Void, Void>{
-
-        private OutputStream outputStream;
-
-
+    public class DownloadFilesTask  extends AsyncTask <Void, Void, ArrayList<Bitmap>>{
 
         @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            outputStream = new ByteArrayOutputStream();
-
-
-
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
+        protected ArrayList<Bitmap> doInBackground(Void... voids) {
             java.io.File outputDir = getActivity().getCacheDir();
-            for(File file : mFiles)
+            OutputStream outputStream = null;
+            String path;
+
+            for (File file : mFiles) {
                 try {
+                    path = "/temp/" + file.getName() + file.getFileExtension();
+                    outputStream = new FileOutputStream(path);
+                    //java.io.File outputFile = java.io.File.createTempFile(file.getName(), file.getFileExtension(), outputDir);
+                    //InputStream inputStream = new FileInputStream(outputFile);
 
-                    java.io.File outputFile = java.io.File.createTempFile(file.getName(), file.getFileExtension(), outputDir);
-                    InputStream inputStream = new FileInputStream(outputFile);
-
-
-                    mDriveServiceHelper.getmDriveService().files().get(file.getId())
-                            .executeMediaAndDownloadTo(outputStream);
-
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    Drive.Files.Get request = mDriveServiceHelper.getmDriveService().files().get(file.getId());
+                    request.getMediaHttpDownloader().setProgressListener(new MediaHttpDownloaderProgressListener() {
+                        @Override
+                        public void progressChanged(MediaHttpDownloader downloader) throws IOException {
+                            switch (downloader.getDownloadState()) {
+                                case MEDIA_IN_PROGRESS:
+                                    Log.d("TAG", "Download in progress");
+                                    Log.d("TAG", "Download percentage: " + downloader.getProgress());
+                                    break;
+                                case MEDIA_COMPLETE:
+                                    Log.d("TAG", "Download Completed!");
+                                    break;
+                            }
+                        }
+                    });
+                    request.executeMediaAndDownloadTo(outputStream);
+                        mFileIO = new java.io.File(path);
+                    if(mFileIO != null){
+                        mBitmap.add(BitmapFactory.decodeFile(path));
+                    }
+                } catch (FileNotFoundException e) {
+                    e.getMessage();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
                 }
-            return null;
+
+            }
+            return mBitmap;
         }
 
     }
