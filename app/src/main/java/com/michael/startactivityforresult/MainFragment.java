@@ -96,7 +96,7 @@ public class MainFragment extends Fragment {
         mImageView = getView().findViewById(R.id.imageview);
         mSpinner = getView().findViewById(R.id.progressBar);
         mSpinner.setVisibility(View.GONE);
-        final ConstraintLayout mLayout = getView().findViewById(R.id.root_layout);
+        final ConstraintLayout mLayout = getView().findViewById(R.id.fragment_main);
         ViewTreeObserver vto = mLayout.getViewTreeObserver();
 
 
