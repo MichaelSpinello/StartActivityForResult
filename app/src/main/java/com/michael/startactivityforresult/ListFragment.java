@@ -52,10 +52,7 @@ public class ListFragment extends Fragment {
     private static final int REQUEST_CODE_SIGN_IN = 100;
     private static final int REQUEST_IMAGE_CAPTURE = 2;
     private RecyclerView mRecyclerView;
-    private ImageView mImageview;
-    private List<File> mFiles;
-    private ArrayList<Bitmap> mBitmap;
-    private java.io.File mFileIO;
+
 
 
 
@@ -161,17 +158,12 @@ public class ListFragment extends Fragment {
 
             mDriveServiceHelper.queryFiles()
                 .addOnSuccessListener(fileList -> {
-                    mFiles = fileList.getFiles();
-                    new DownloadFilesTask().execute();
-
                     Log.d("TAG", "nel listener");
                     if(getActivity()!= null) {
                         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-                        mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mBitmap));
+                        mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mDriveServiceHelper));
                         Log.d("TAG", "sto per uscire dal listener");
                     }
-
-
                 })
                 .addOnFailureListener(exception -> Log.e(TAG, "Unable to query files.", exception));
         }
@@ -189,50 +181,5 @@ public class ListFragment extends Fragment {
         //mOpenFileId = fileId;
     }
 
-    public class DownloadFilesTask  extends AsyncTask <Void, Void, ArrayList<Bitmap>>{
 
-        @Override
-        protected ArrayList<Bitmap> doInBackground(Void... voids) {
-            java.io.File outputDir = getActivity().getCacheDir();
-            OutputStream outputStream = null;
-            String path;
-
-            for (File file : mFiles) {
-                try {
-                    path = "/temp/" + file.getName() + file.getFileExtension();
-                    outputStream = new FileOutputStream(path);
-                    //java.io.File outputFile = java.io.File.createTempFile(file.getName(), file.getFileExtension(), outputDir);
-                    //InputStream inputStream = new FileInputStream(outputFile);
-
-                    Drive.Files.Get request = mDriveServiceHelper.getmDriveService().files().get(file.getId());
-                    request.getMediaHttpDownloader().setProgressListener(new MediaHttpDownloaderProgressListener() {
-                        @Override
-                        public void progressChanged(MediaHttpDownloader downloader) throws IOException {
-                            switch (downloader.getDownloadState()) {
-                                case MEDIA_IN_PROGRESS:
-                                    Log.d("TAG", "Download in progress");
-                                    Log.d("TAG", "Download percentage: " + downloader.getProgress());
-                                    break;
-                                case MEDIA_COMPLETE:
-                                    Log.d("TAG", "Download Completed!");
-                                    break;
-                            }
-                        }
-                    });
-                    request.executeMediaAndDownloadTo(outputStream);
-                        mFileIO = new java.io.File(path);
-                    if(mFileIO != null){
-                        mBitmap.add(BitmapFactory.decodeFile(path));
-                    }
-                } catch (FileNotFoundException e) {
-                    e.getMessage();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-
-            }
-            return mBitmap;
-        }
-
-    }
 }
