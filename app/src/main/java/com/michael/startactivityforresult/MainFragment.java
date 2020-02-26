@@ -30,15 +30,6 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.Scope;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.api.services.drive.DriveScopes;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -63,9 +54,9 @@ public class MainFragment extends Fragment {
     private String mPhotoDirectory;
     private boolean inProgress;
     private int resultUpload;
-    private DriveServiceHelper mDriveServiceHelper;
     private static final String TAG = "TAG_MAIN_FRAGMENT";
-    private static final int REQUEST_CODE_SIGN_IN = 100;
+
+    private DriveServiceHelper mDriveServiceHelper;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -74,6 +65,7 @@ public class MainFragment extends Fragment {
         model = new ViewModelProvider(this).get(MyViewModel.class);
         rotate.setInterpolator(new LinearInterpolator());
         rotate.setDuration(10000);
+        mDriveServiceHelper = model.getmDriveServiceHelper();
         Log.d(TAG, "sono nell'oncreate del fragment");
 
     }
@@ -152,44 +144,6 @@ public class MainFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        signIn();
-    }
-
-    private void signIn() {
-
-        Log.d(TAG, "Requesting sign-in");
-
-        GoogleSignInOptions signInOptions =
-                new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                        .requestEmail()
-                        .requestScopes(new Scope(DriveScopes.DRIVE_FILE))
-                        .build();
-        if(getActivity()!= null) {
-            GoogleSignInClient client = GoogleSignIn.getClient(getActivity(), signInOptions);
-
-            startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGN_IN);
-        }
-    }
-
-    private void handleSignInResult(Intent result) {
-        GoogleSignIn.getSignedInAccountFromIntent(result)
-                .addOnSuccessListener(new OnSuccessListener<GoogleSignInAccount>() {
-                    @Override
-                    public void onSuccess(GoogleSignInAccount googleSignInAccount) {
-                        Log.d(TAG, "Signed in as " + googleSignInAccount.getEmail());
-
-                        if(getActivity()!= null)
-                            mDriveServiceHelper = new DriveServiceHelper(getGoogleDriveService(getActivity().getApplicationContext(), googleSignInAccount, "appName"));
-
-                        Log.d(TAG, "handleSignInResult: " + mDriveServiceHelper);
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Unable to sign in.", e);
-                    }
-                });
     }
 
     private void dispatchTakePictureIntent(){
@@ -219,12 +173,6 @@ public class MainFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
             mDescription.setText("Immagine acquisita correttamente");
-        }
-        else if(requestCode == REQUEST_CODE_SIGN_IN){
-            if(resultCode == Activity.RESULT_OK && data != null){
-                Log.d(TAG, "chiamo handlesigninresult " + resultCode);
-                handleSignInResult(data);
-            }
         }
         else {
             mDescription.setText("Immagine non acquisita. Riprovare");
