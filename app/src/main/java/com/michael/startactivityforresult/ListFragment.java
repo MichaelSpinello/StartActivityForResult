@@ -2,16 +2,11 @@ package com.michael.startactivityforresult;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,47 +21,27 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.api.client.googleapis.media.MediaHttpDownloader;
-import com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener;
-import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
-import com.google.api.services.drive.model.File;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.michael.startactivityforresult.DriveServiceHelper.getGoogleDriveService;
 
 public class ListFragment extends Fragment {
 
-
     private DriveServiceHelper mDriveServiceHelper;
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "TAG_LIST_FRAGMENT";
     private static final int REQUEST_CODE_SIGN_IN = 100;
-    private static final int REQUEST_IMAGE_CAPTURE = 2;
     private RecyclerView mRecyclerView;
-
-
-
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getActivity().setContentView(R.layout.fragment_list);
-        //mRecyclerView = (RecyclerView) getActivity().findViewById(R.id.recycler_view);
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-
+        Log.d(TAG, "sono nell'oncreateview del fragmentlist");
         ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_list, container, false);
         return root;
     }
@@ -80,7 +55,6 @@ public class ListFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
         signIn();
 
     }
@@ -97,6 +71,7 @@ public class ListFragment extends Fragment {
         if (getActivity() != null) {
             GoogleSignInClient client = GoogleSignIn.getClient(getActivity(), signInOptions);
 
+            Log.d(TAG, "sto per far partire l'intent");
             startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGN_IN);
         }
     }
@@ -106,48 +81,38 @@ public class ListFragment extends Fragment {
                 .addOnSuccessListener(new OnSuccessListener<GoogleSignInAccount>() {
                     @Override
                     public void onSuccess(GoogleSignInAccount googleSignInAccount) {
-                        Log.d("LOG", "Signed in as " + googleSignInAccount.getEmail());
+                        Log.d(TAG, "Signed in as " + googleSignInAccount.getEmail());
 
                         if (getActivity() != null)
                             mDriveServiceHelper = new DriveServiceHelper(getGoogleDriveService(getActivity().getApplicationContext(), googleSignInAccount, "appName"));
 
-                        Log.d("LOG", "handleSignInResult: " + mDriveServiceHelper);
+                        Log.d(TAG, "handleSignInResult: " + mDriveServiceHelper);
                         query();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.e("", "Unable to sign in.", e);
+                        Log.e(TAG, "Unable to sign in.", e);
                     }
                 });
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        Log.d(TAG, "result code " + resultCode);
+        Log.d(TAG, "request code " + requestCode);
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_SIGN_IN) {
             Log.d(TAG, "result code " + resultCode);
+            if(resultCode == Activity.RESULT_OK)
+                Log.d(TAG, "Activity.RESULT_OK? true");
+            if(data != null)
+                Log.d(TAG, "data!= null: true");
             if (resultCode == Activity.RESULT_OK && data != null) {
+                Log.d(TAG, "chiamo handlesigninresult " + resultCode);
                 handleSignInResult(data);
             }
-        }
-    }
-
-    private void readFile(String fileId) {
-        if (mDriveServiceHelper != null) {
-            Log.d(TAG, "Reading file " + fileId);
-
-            mDriveServiceHelper.readFile(fileId)
-                    .addOnSuccessListener(nameAndContent -> {
-                        String name = nameAndContent.first;
-                        String content = nameAndContent.second;
-
-
-                        setReadWriteMode(fileId);
-                    })
-                    .addOnFailureListener(exception ->
-                            Log.e(TAG, "Couldn't read file.", exception));
         }
     }
 
@@ -158,28 +123,16 @@ public class ListFragment extends Fragment {
 
             mDriveServiceHelper.queryFiles()
                 .addOnSuccessListener(fileList -> {
-                    Log.d("TAG", "nel listener");
+                    Log.d(TAG, "nel listener");
                     if(getActivity()!= null) {
                         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
                         mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mDriveServiceHelper));
-                        Log.d("TAG", "sto per uscire dal listener");
+                        Log.d(TAG, "sto per uscire dal listener");
                     }
                 })
                 .addOnFailureListener(exception -> Log.e(TAG, "Unable to query files.", exception));
         }
 
     }
-    /**
-     * Updates the UI to read-only mode.
-     */
-    private void setReadOnlyMode() {
-       // mDocContentEditText.setEnabled(false);
-    }
-    private void setReadWriteMode(String fileId) {
-        //mFileTitleEditText.setEnabled(true);
-        //mDocContentEditText.setEnabled(true);
-        //mOpenFileId = fileId;
-    }
-
 
 }

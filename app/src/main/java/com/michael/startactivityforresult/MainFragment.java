@@ -64,25 +64,24 @@ public class MainFragment extends Fragment {
     private boolean inProgress;
     private int resultUpload;
     private DriveServiceHelper mDriveServiceHelper;
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "TAG_MAIN_FRAGMENT";
     private static final int REQUEST_CODE_SIGN_IN = 100;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        getActivity().setContentView(R.layout.fragment_main);
         model = new ViewModelProvider(this).get(MyViewModel.class);
         rotate.setInterpolator(new LinearInterpolator());
         rotate.setDuration(10000);
-        Log.d("prova", "sono nell'oncreate del fragment");
+        Log.d(TAG, "sono nell'oncreate del fragment");
 
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.d("prova", "sono nell'oncreateview del mainfragment");
+        Log.d(TAG, "sono nell'oncreateview del mainfragment");
         ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_main, container, false);
         return root;
     }
@@ -153,7 +152,6 @@ public class MainFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
         signIn();
     }
 
@@ -178,18 +176,18 @@ public class MainFragment extends Fragment {
                 .addOnSuccessListener(new OnSuccessListener<GoogleSignInAccount>() {
                     @Override
                     public void onSuccess(GoogleSignInAccount googleSignInAccount) {
-                        Log.d("LOG", "Signed in as " + googleSignInAccount.getEmail());
+                        Log.d(TAG, "Signed in as " + googleSignInAccount.getEmail());
 
                         if(getActivity()!= null)
                             mDriveServiceHelper = new DriveServiceHelper(getGoogleDriveService(getActivity().getApplicationContext(), googleSignInAccount, "appName"));
 
-                        Log.d("LOG", "handleSignInResult: " + mDriveServiceHelper);
+                        Log.d(TAG, "handleSignInResult: " + mDriveServiceHelper);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.e("", "Unable to sign in.", e);
+                        Log.e(TAG, "Unable to sign in.", e);
                     }
                 });
     }
@@ -216,12 +214,15 @@ public class MainFragment extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        Log.d(TAG, "result code " + resultCode);
+        Log.d(TAG, "request code " + requestCode);
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
             mDescription.setText("Immagine acquisita correttamente");
         }
         else if(requestCode == REQUEST_CODE_SIGN_IN){
             if(resultCode == Activity.RESULT_OK && data != null){
+                Log.d(TAG, "chiamo handlesigninresult " + resultCode);
                 handleSignInResult(data);
             }
         }
