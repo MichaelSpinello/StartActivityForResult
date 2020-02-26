@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.transition.Transition;
 import androidx.viewpager.widget.PagerAdapter;
@@ -52,6 +53,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "TAG_MAIN_ACTIVITY";
     private static final int REQUEST_CODE_SIGN_IN = 100;
     private DriveServiceHelper mDriveServiceHelper;
+
+    public MyViewModel getModel() {
+        return model;
+    }
+
     private MyViewModel model;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,10 +65,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         model = new ViewModelProvider(this).get(MyViewModel.class);
-        if (model.getmDriveServiceHelper() != null)
-            mDriveServiceHelper = model.getmDriveServiceHelper();
-        else
+        if (model.getmDriveServiceHelper().getValue() == null)
             signIn();
+        else {
+            mDriveServiceHelper = model.getmDriveServiceHelper().getValue();
+            Log.d(TAG, "driveservicehelper GIA SETTATO!");
+        }
+
+        final androidx.lifecycle.Observer<DriveServiceHelper> observer = new Observer<DriveServiceHelper>() {
+            @Override
+            public void onChanged(DriveServiceHelper driveServiceHelper) {
+                mDriveServiceHelper = driveServiceHelper;
+            }
+        };
+        model.getmDriveServiceHelper().observe(this, observer);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -157,7 +173,7 @@ public class PageAdapter extends FragmentPagerAdapter{
 
                         if(this!= null) {
                             mDriveServiceHelper = new DriveServiceHelper(getGoogleDriveService(getApplicationContext(), googleSignInAccount, "appName"));
-                            model.setmDriveServiceHelper(mDriveServiceHelper);
+                            model.getmDriveServiceHelper().setValue(mDriveServiceHelper);
                         }
 
                         Log.d(TAG, "handleSignInResult: " + mDriveServiceHelper);

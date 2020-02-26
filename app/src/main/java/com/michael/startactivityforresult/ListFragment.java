@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,8 +27,16 @@ public class ListFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        model = new ViewModelProvider(this).get(MyViewModel.class);
-        mDriveServiceHelper = model.getmDriveServiceHelper();
+        model = new ViewModelProvider(getActivity()).get(MyViewModel.class);
+        mDriveServiceHelper = model.getmDriveServiceHelper().getValue();
+        final androidx.lifecycle.Observer<DriveServiceHelper> observer = new Observer<DriveServiceHelper>() {
+            @Override
+            public void onChanged(DriveServiceHelper driveServiceHelper) {
+                mDriveServiceHelper = driveServiceHelper;
+                Log.d(TAG, "Aggiornamento del driveservicehelper");
+            }
+        };
+        model.getmDriveServiceHelper().observe(this, observer);
     }
 
     @Nullable

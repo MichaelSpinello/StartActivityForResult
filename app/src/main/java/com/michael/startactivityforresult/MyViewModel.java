@@ -14,16 +14,8 @@ public class MyViewModel extends ViewModel {
     private String mDescription;
     private String mStatus;
     private String mPhotoDirectory;
-    private DriveServiceHelper mDriveServiceHelper;
+    private MutableLiveData<DriveServiceHelper> mDriveServiceHelper;
     private MutableLiveData<TaskResponse> taskResponse;
-
-    public DriveServiceHelper getmDriveServiceHelper() {
-        return mDriveServiceHelper;
-    }
-
-    public void setmDriveServiceHelper(DriveServiceHelper mDriveServiceHelper) {
-        this.mDriveServiceHelper = mDriveServiceHelper;
-    }
 
     public String getmDescription() {
         return mDescription;
@@ -48,7 +40,11 @@ public class MyViewModel extends ViewModel {
     public void setmPhotoDirectory(String mPhotoDirectory) {
         this.mPhotoDirectory = mPhotoDirectory;
     }
-
+    public MutableLiveData<DriveServiceHelper> getmDriveServiceHelper() {
+        if(mDriveServiceHelper == null)
+            mDriveServiceHelper = new MutableLiveData<DriveServiceHelper>();
+        return mDriveServiceHelper;
+    }
 
 
     public MutableLiveData<TaskResponse> getTaskResponse() {

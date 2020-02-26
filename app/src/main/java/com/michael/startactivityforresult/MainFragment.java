@@ -28,12 +28,14 @@ import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Observable;
 
 import static android.os.Environment.DIRECTORY_PICTURES;
 import static com.michael.startactivityforresult.DriveServiceHelper.getGoogleDriveService;
@@ -62,10 +64,18 @@ public class MainFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        model = new ViewModelProvider(this).get(MyViewModel.class);
+        model = new ViewModelProvider(getActivity()).get(MyViewModel.class);
         rotate.setInterpolator(new LinearInterpolator());
         rotate.setDuration(10000);
-        mDriveServiceHelper = model.getmDriveServiceHelper();
+        mDriveServiceHelper = model.getmDriveServiceHelper().getValue();
+        final androidx.lifecycle.Observer<DriveServiceHelper> observer = new Observer<DriveServiceHelper>() {
+            @Override
+            public void onChanged(DriveServiceHelper driveServiceHelper) {
+                mDriveServiceHelper = driveServiceHelper;
+            }
+        };
+        model.getmDriveServiceHelper().observe(this, observer);
+
         Log.d(TAG, "sono nell'oncreate del fragment");
 
     }
