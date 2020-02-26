@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentPagerAdapter;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.transition.Transition;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
@@ -30,18 +31,10 @@ import com.google.android.material.tabs.TabLayout;
 
 public class MainActivity extends AppCompatActivity {
 
-    //private MyViewModel model;
-    //private Fragment mMainFragment;
-    //private static final String KEY_STATE_FRAGMENT = "custom_activity_state";
-    private PageAdapter mSectionPagerAdapter;
-    private ViewPager mViewPager;
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -72,41 +65,20 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-
-
-        //model = new ViewModelProvider(this).get(MyViewModel.class);
-
-        /*FragmentManager fm = getSupportFragmentManager();
-
-
-        mMainFragment = fm.findFragmentById(R.id.fragment_container);
-        if (mMainFragment == null) {
-            mMainFragment = new ListFragment();
-            fm.beginTransaction().add(mMainFragment, KEY_STATE_FRAGMENT).commit();
-        }*/
-
+        //tabLayout.setupWithViewPager(viewPager);
     }
 
 
 
-    /*@Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-    }*/
-
-
-public class PageAdapter extends FragmentStatePagerAdapter{
+public class PageAdapter extends FragmentPagerAdapter{
 
     public PageAdapter(@NonNull FragmentManager fm) {
-        super(fm);
+        super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT );
     }
 
     @NonNull
     @Override
     public Fragment getItem(int position) {
-        //return PlaceholderFragment.newInstance(position + 1);
         Fragment fragment = null;
         switch (position){
             case 0: fragment = new MainFragment();

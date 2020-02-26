@@ -82,7 +82,7 @@ public class MainFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-
+        Log.d("prova", "sono nell'oncreateview del mainfragment");
         ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_main, container, false);
         return root;
     }
