@@ -145,7 +145,6 @@ public class PageAdapter extends FragmentPagerAdapter{
     @Override
     public void onStart() {
         super.onStart();
-        signIn();
     }
 
     private void signIn() {

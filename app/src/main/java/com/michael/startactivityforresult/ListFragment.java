@@ -14,6 +14,7 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class ListFragment extends Fragment {
 
@@ -22,6 +23,8 @@ public class ListFragment extends Fragment {
     private static final int REQUEST_CODE_SIGN_IN = 100;
     private RecyclerView mRecyclerView;
     private MyViewModel model;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private RecyclerViewAdapter mRecyclerViewAdapter;
 
 
     @Override
@@ -33,6 +36,7 @@ public class ListFragment extends Fragment {
             @Override
             public void onChanged(DriveServiceHelper driveServiceHelper) {
                 mDriveServiceHelper = driveServiceHelper;
+                query();
                 Log.d(TAG, "Aggiornamento del driveservicehelper");
             }
         };
@@ -50,7 +54,17 @@ public class ListFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         mRecyclerView =  view.findViewById(R.id.recycler_view);
+        mSwipeRefreshLayout = view.findViewById(R.id.refresh_layout);
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
 
+                query();
+                if(mRecyclerViewAdapter != null)
+                    mRecyclerViewAdapter.notifyDataSetChanged();
+                mSwipeRefreshLayout.setRefreshing(false);
+            }
+        });
     }
 
     @Override
@@ -71,7 +85,8 @@ public class ListFragment extends Fragment {
                     Log.d(TAG, "nel listener");
                     if(getActivity()!= null) {
                         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-                        mRecyclerView.setAdapter(new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mDriveServiceHelper));
+                        mRecyclerViewAdapter = new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mDriveServiceHelper);
+                        mRecyclerView.setAdapter(mRecyclerViewAdapter);
                         Log.d(TAG, "sto per uscire dal listener");
                     }
                 })

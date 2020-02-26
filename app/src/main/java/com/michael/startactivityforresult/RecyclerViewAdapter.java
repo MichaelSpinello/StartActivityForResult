@@ -1,12 +1,7 @@
 package com.michael.startactivityforresult;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.os.AsyncTask;
-import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,28 +9,20 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.api.client.googleapis.media.MediaHttpDownloader;
 import com.google.api.client.googleapis.media.MediaHttpDownloaderProgressListener;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.squareup.picasso.Picasso;
-
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapter.FeedModelViewHolder>{
@@ -49,6 +36,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
     private OutputStream outputStream = null;
     private ProgressBar mSpinner;
     private boolean statoDownload;
+    private MyViewModel model;
+
 
     public static class FeedModelViewHolder extends RecyclerView.ViewHolder{
         private View driveFileView;
@@ -114,25 +103,22 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
                 try {
                     mFileIO = new java.io.File(outputDir.getPath(), driveFeedModel.getName());
                     if(!mFileIO.exists() || mFileIO == null) {
-
                         mFileIO.createNewFile();
                         outputStream = new FileOutputStream(mFileIO.getPath());
-
                         Drive.Files.Get request = mDriveServiceHelper.getmDriveService().files().get(driveFeedModel.getId());
-
-
-
                         request.getMediaHttpDownloader().setProgressListener(new MediaHttpDownloaderProgressListener() {
                             @Override
                             public void progressChanged(MediaHttpDownloader downloader) throws IOException {
                                 switch (downloader.getDownloadState()) {
                                     case MEDIA_IN_PROGRESS:
                                         statoDownload = true;
+                                        mSpinner.setVisibility(View.VISIBLE);
                                         Log.d("TAG", "Download in progress");
                                         Log.d("TAG", "Download percentage: " + downloader.getProgress());
                                         break;
                                     case MEDIA_COMPLETE:
                                         statoDownload = false;
+                                        mSpinner.setVisibility(View.INVISIBLE);
                                         Log.d("TAG", "Download Completed!");
                                         break;
                                 }
@@ -149,7 +135,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
 
             return null;
         }
-
 
         @Override
         protected void onPostExecute(Void avoid) {
