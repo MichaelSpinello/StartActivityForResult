@@ -22,7 +22,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -30,15 +29,11 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Observable;
-
 import static android.os.Environment.DIRECTORY_PICTURES;
-import static com.michael.startactivityforresult.DriveServiceHelper.getGoogleDriveService;
 
 public class MainFragment extends Fragment {
     private Button mButton;
@@ -75,15 +70,11 @@ public class MainFragment extends Fragment {
             }
         };
         model.getmDriveServiceHelper().observe(this, observer);
-
-        Log.d(TAG, "sono nell'oncreate del fragment");
-
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.d(TAG, "sono nell'oncreateview del mainfragment");
         ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_main, container, false);
         return root;
     }
@@ -99,7 +90,6 @@ public class MainFragment extends Fragment {
         mSpinner.setVisibility(View.GONE);
         final ConstraintLayout mLayout = getView().findViewById(R.id.fragment_main);
         ViewTreeObserver vto = mLayout.getViewTreeObserver();
-
 
         if (model.getmPhotoDirectory() != null)
             mPhotoDirectory = model.getmPhotoDirectory();
@@ -178,8 +168,6 @@ public class MainFragment extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        Log.d(TAG, "result code " + resultCode);
-        Log.d(TAG, "request code " + requestCode);
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
             mDescription.setText("Immagine acquisita correttamente");
@@ -197,9 +185,7 @@ public class MainFragment extends Fragment {
         String imageNameFile = "Foto_" + timeStamp;
         if(getActivity()!= null) {
             File storageDir = getActivity().getExternalFilesDir(DIRECTORY_PICTURES);
-
             File image = File.createTempFile(imageNameFile, ".jpg", storageDir);
-
             mPhotoDirectory = image.getAbsolutePath();
             model.setmPhotoDirectory(mPhotoDirectory);
             return image;

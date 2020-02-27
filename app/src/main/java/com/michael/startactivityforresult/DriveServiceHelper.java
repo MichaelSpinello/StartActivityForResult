@@ -202,9 +202,6 @@ public class DriveServiceHelper {
         });
     }
 
-
-
-    //aggiunto da me
     public Task<GoogleDriveFileHolder> uploadFile(final java.io.File localFile, final String mimeType, @Nullable final String folderId) {
         return Tasks.call(mExecutor, new Callable<GoogleDriveFileHolder>() {
             @Override

@@ -1,12 +1,10 @@
 package com.michael.startactivityforresult;
 
-
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -20,7 +18,6 @@ public class ListFragment extends Fragment {
 
     private DriveServiceHelper mDriveServiceHelper;
     private static final String TAG = "TAG_LIST_FRAGMENT";
-    private static final int REQUEST_CODE_SIGN_IN = 100;
     private RecyclerView mRecyclerView;
     private MyViewModel model;
     private SwipeRefreshLayout mSwipeRefreshLayout;
@@ -37,7 +34,6 @@ public class ListFragment extends Fragment {
             public void onChanged(DriveServiceHelper driveServiceHelper) {
                 mDriveServiceHelper = driveServiceHelper;
                 query();
-                Log.d(TAG, "Aggiornamento del driveservicehelper");
             }
         };
         model.getmDriveServiceHelper().observe(this, observer);
@@ -46,7 +42,6 @@ public class ListFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.d(TAG, "sono nell'oncreateview del fragmentlist");
         ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_list, container, false);
         return root;
     }
@@ -71,7 +66,6 @@ public class ListFragment extends Fragment {
     public void onStart() {
         super.onStart();
         query();
-
     }
 
 
@@ -82,17 +76,13 @@ public class ListFragment extends Fragment {
 
             mDriveServiceHelper.queryFiles()
                 .addOnSuccessListener(fileList -> {
-                    Log.d(TAG, "nel listener");
                     if(getActivity()!= null) {
                         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
                         mRecyclerViewAdapter = new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mDriveServiceHelper, getActivity());
                         mRecyclerView.setAdapter(mRecyclerViewAdapter);
-                        Log.d(TAG, "sto per uscire dal listener");
                     }
                 })
                 .addOnFailureListener(exception -> Log.e(TAG, "Unable to query files.", exception));
         }
-
     }
-
 }
