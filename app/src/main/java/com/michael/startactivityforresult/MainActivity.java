@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "driveservicehelper GIA SETTATO!");
         }
 
+
         final androidx.lifecycle.Observer<DriveServiceHelper> observer = new Observer<DriveServiceHelper>() {
             @Override
             public void onChanged(DriveServiceHelper driveServiceHelper) {

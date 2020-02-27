@@ -30,15 +30,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
     private Context mContext;
     private List<File> mDriveFiles;
     private DriveServiceHelper mDriveServiceHelper;
-    private java.io.File mFileIO;
+
     private ImageView mImageView;
     private TextView mDescription;
-    private File driveFeedModel;
-    private OutputStream outputStream = null;
     private ProgressBar mSpinner;
-    private boolean statoDownload;
-    private MyViewModel model;
-    private FragmentActivity mFragmentActivity;
     private static final String TAG = "TAG_RECYCLER";
 
 
@@ -55,8 +50,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
         mContext = context;
         mDriveFiles = driveFileList;
         this.mDriveServiceHelper = mDriveServiceHelper;
-        this.mFragmentActivity = mFragmentActivity;
-        model = new ViewModelProvider(mFragmentActivity).get(MyViewModel.class);
+        //this.mFragmentActivity = mFragmentActivity;
+        //model = new ViewModelProvider(mFragmentActivity).get(MyViewModel.class);
     }
 
     @NonNull
@@ -69,23 +64,22 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
 
     @Override
     public void onBindViewHolder(@NonNull FeedModelViewHolder holder, int position) {
-        driveFeedModel = mDriveFiles.get(position);
         mImageView = holder.driveFileView.findViewById(R.id.imageview);
         mDescription = holder.driveFileView.findViewById(R.id.title);
         mSpinner = holder.driveFileView.findViewById(R.id.progressBar2);
         //mSpinner.setVisibility(View.INVISIBLE);
-        ((TextView)holder.driveFileView.findViewById(R.id.title)).setText(driveFeedModel.getThumbnailLink());
-        URL url = null;
-        try {
-            url = new URL("https://drive.google.com/uc?export=download&id=" + driveFeedModel.getId());
-            //Log.d(TAG, url.toString());
+//        ((TextView)holder.driveFileView.findViewById(R.id.title)).setText(driveFeedModel.getThumbnailLink());
+//        URL url = null;
+//        try {
+//            url = new URL("https://drive.google.com/uc?export=download&id=" + driveFeedModel.getId());
+//            //Log.d(TAG, url.toString());
+//
+//        } catch (MalformedURLException e) {
+//            e.printStackTrace();
+//        }
 
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-
-
-        new DownloadFilesTask().execute(driveFeedModel);
+        DownloadFilesTask downloadFilesTask = new DownloadFilesTask(mImageView, mSpinner, mDescription, mContext, mDriveServiceHelper);
+        downloadFilesTask.execute(mDriveFiles.get(position));
     }
 
     @Override
