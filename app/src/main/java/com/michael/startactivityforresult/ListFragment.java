@@ -85,7 +85,7 @@ public class ListFragment extends Fragment {
                     Log.d(TAG, "nel listener");
                     if(getActivity()!= null) {
                         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-                        mRecyclerViewAdapter = new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mDriveServiceHelper);
+                        mRecyclerViewAdapter = new RecyclerViewAdapter(getActivity(), fileList.getFiles(), mDriveServiceHelper, getActivity());
                         mRecyclerView.setAdapter(mRecyclerViewAdapter);
                         Log.d(TAG, "sto per uscire dal listener");
                     }

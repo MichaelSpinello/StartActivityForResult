@@ -10,6 +10,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.api.client.googleapis.media.MediaHttpDownloader;
@@ -37,6 +38,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
     private ProgressBar mSpinner;
     private boolean statoDownload;
     private MyViewModel model;
+    private FragmentActivity mFragmentActivity;
+    private static final String TAG = "TAG_RECYCLER";
 
 
     public static class FeedModelViewHolder extends RecyclerView.ViewHolder{
@@ -48,10 +51,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
         }
     }
 
-    public RecyclerViewAdapter(Context context, List<File> driveFileList, DriveServiceHelper mDriveServiceHelper){
+    public RecyclerViewAdapter(Context context, List<File> driveFileList, DriveServiceHelper mDriveServiceHelper, FragmentActivity mFragmentActivity){
         mContext = context;
         mDriveFiles = driveFileList;
         this.mDriveServiceHelper = mDriveServiceHelper;
+        this.mFragmentActivity = mFragmentActivity;
+        model = new ViewModelProvider(mFragmentActivity).get(MyViewModel.class);
     }
 
     @NonNull
@@ -59,7 +64,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
     public FeedModelViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_drive_file, parent, false);
         FeedModelViewHolder holder = new FeedModelViewHolder(v);
-        //Picasso.with(this).load("www.journaldev.com").placeholder(R.drawable.placeholder).into(imageView);
         return holder;
     }
 
@@ -69,12 +73,12 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
         mImageView = holder.driveFileView.findViewById(R.id.imageview);
         mDescription = holder.driveFileView.findViewById(R.id.title);
         mSpinner = holder.driveFileView.findViewById(R.id.progressBar2);
+        //mSpinner.setVisibility(View.INVISIBLE);
         ((TextView)holder.driveFileView.findViewById(R.id.title)).setText(driveFeedModel.getThumbnailLink());
         URL url = null;
         try {
             url = new URL("https://drive.google.com/uc?export=download&id=" + driveFeedModel.getId());
-            Log.d("url: ", url.toString());
-            //Picasso.with(mContext).load(url.toString()).into(imageView);
+            //Log.d(TAG, url.toString());
 
         } catch (MalformedURLException e) {
             e.printStackTrace();
@@ -94,17 +98,21 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
 
         @Override
         protected Void doInBackground(File... files) {
-            String s = mContext.getFilesDir() + "/temporanei5";
+            String s = mContext.getCacheDir().toString();
             java.io.File outputDir = new java.io.File(s);
-            if(!outputDir.exists())
+            if(!outputDir.exists()) {
+                Log.d(TAG, "creo la cartella");
                 outputDir.mkdirs();
-
-
+            }
                 try {
+
+                    Log.d(TAG, "creo il file per: "  + driveFeedModel.getName());
                     mFileIO = new java.io.File(outputDir.getPath(), driveFeedModel.getName());
                     if(!mFileIO.exists() || mFileIO == null) {
+                        Log.d(TAG, "creo nuovo file per: "  + driveFeedModel.getName());
                         mFileIO.createNewFile();
                         outputStream = new FileOutputStream(mFileIO.getPath());
+
                         Drive.Files.Get request = mDriveServiceHelper.getmDriveService().files().get(driveFeedModel.getId());
                         request.getMediaHttpDownloader().setProgressListener(new MediaHttpDownloaderProgressListener() {
                             @Override
@@ -112,25 +120,25 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
                                 switch (downloader.getDownloadState()) {
                                     case MEDIA_IN_PROGRESS:
                                         statoDownload = true;
-                                        mSpinner.setVisibility(View.VISIBLE);
-                                        Log.d("TAG", "Download in progress");
-                                        Log.d("TAG", "Download percentage: " + downloader.getProgress());
+                                        Log.d(TAG, "Download in progress di: " + driveFeedModel.getName());
+                                        Log.d(TAG, "Download percentage: " + downloader.getProgress());
                                         break;
                                     case MEDIA_COMPLETE:
                                         statoDownload = false;
-                                        mSpinner.setVisibility(View.INVISIBLE);
-                                        Log.d("TAG", "Download Completed!");
+                                        Log.d(TAG, "Download Completed! di: " + driveFeedModel.getName());
+
                                         break;
                                 }
                             }
                         });
 
+                        Log.d(TAG, "eseguo il download di: " + driveFeedModel.getName());
                         request.executeMediaAndDownloadTo(outputStream);
                     }
                 } catch (FileNotFoundException e) {
                     e.getMessage();
                 } catch (IOException e1) {
-                    Log.e("ERRORE", e1.getMessage());
+                    Log.e(TAG, e1.getMessage());
                 }
 
             return null;
@@ -138,14 +146,19 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter <RecyclerViewAdapt
 
         @Override
         protected void onPostExecute(Void avoid) {
+            Log.d(TAG, "istruzione ONPOST per: " + driveFeedModel.getName());
             if(statoDownload == true){
+                Log.d(TAG, "faccio apparire lo spinner per: " + driveFeedModel.getName());
                 mSpinner.setVisibility(View.VISIBLE);
+                //new DownloadFilesTask().execute(driveFeedModel);
             }
-            else
+            else {
+                Log.d(TAG, "Tolgo lo spinner per: " + driveFeedModel.getName());
                 mSpinner.setVisibility(View.INVISIBLE);
+            }
             if(mFileIO.exists())
                 if(mFileIO != null){
-                    Log.d("TAG", "Istruzione picasso");
+                    Log.d(TAG, "Istruzione picasso di: " + driveFeedModel.getName());
                     Picasso.with(mContext).load(mFileIO).centerCrop().resize(100, 100).into(mImageView);
                     mDescription.setText(driveFeedModel.getName());
                 }
